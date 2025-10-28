@@ -58,6 +58,52 @@ github release、archive以及项目文件的加速项目，支持clone，有Clo
 
 `PREFIX`是前缀，默认（根路径情况为"/"），如果自定义路由为example.com/gh/*，请将PREFIX改为 '/gh/'，注意，少一个杠都会错！
 
+## AWS Lambda@Edge 部署
+
+### CloudFront
+
+1. 前往 AWS CloudFront https://console.aws.amazon.com/cloudfront ，点击 Create distribution 。
+2. Step 1
+   - 随便填一个 Distribution name，点击 Next 。
+3. Step 2
+   - 选择 Origin type 里面的 Other 。
+   - 选项 Origin / Custom origin 填写 aws.amazon.com 。
+   - 选项 Settings / Cache settings 选择 Customize cache settings 。
+   - 选项 Allowed HTTP methods 选择 GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE 。
+   - 选项 Cache policy 选择 Caching Disabled 。
+   - 选项 Origin request policy 选择 AllViewer 。
+   - 选项 Response headers policy 选择 Managed-CORS-with-preflight-and-SecurityHeadersPolicy 。
+   - 点击 Next 。
+4. Step 3
+   - 选择 Do not enable security protections ，点击 Next 。
+5. Step 4
+   - 点击 Create Distribution 。
+6. 记录新建的 Distribution ID 。
+
+### Lambda - Code
+
+1. 前往 AWS Lambda https://console.aws.amazon.com/lambda ，点击 Create Function 。
+3. 输入名称，点击 Create Function 。
+4. 点击 Code 选项卡，复制 `index.js` 文件内容到 VSCode 在线编辑器中的 `index.mjs` 文件，将函数调用 `addEventListener` 注释掉。
+5. 点击 VSCode 在线编辑器左侧的 Deploy 。
+5. 点击 Configuration 选项卡，前往 Configuration 选项卡，点击 Edit，修改 Timeout 为 0 min 10 sec 。
+
+### Lambda - Trigger
+
+1. 前往 AWS Lambda https://console.aws.amazon.com/lambda 。
+2. 点击 Function overview / Diagram 里面的 Add trigger 。
+3. 选择 CloudFront，点击 Deploy to Lambda@Edge 。
+4. 在弹出的页面中：
+   - Select an option 选择 Configure new CloudFront trigger 。
+   - Distribution 选择刚刚新建的 Distribution ID 。
+   - CloudFront event 选择 Viewer request 。
+   - 勾选 Include body 和 Confirm 。
+   - 点击 Deploy 。
+5. 如果提示权限问题，那么前往 Configuration 选项卡，点击 Edit 。
+   - 将 Execution role 设为 Create a new role from AWS policy templates 。
+   - 将 Policy templates 设为 Basic Lambda@Edge permissions (for CloudFront trigger) 。
+   - 点击 Save 。
+
 ## Python版本部署
 
 ### Docker部署

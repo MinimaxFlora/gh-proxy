@@ -54,6 +54,7 @@ function newUrl(urlStr) {
 }
 
 
+// comment out function call `addEventListener` for AWS Lambda usage
 addEventListener('fetch', e => {
     const ret = fetchHandler(e)
         .catch(err => makeRes('cfworker error:\n' + err.stack, 502))
@@ -70,6 +71,7 @@ function checkUrl(u) {
     return false
 }
 
+// entry <= Cloudflare Worker
 /**
  * @param {FetchEvent} e
  */
@@ -184,3 +186,91 @@ async function proxy(urlObj, reqInit) {
     })
 }
 
+// entry <= AWS Lambda
+export const handler = async (event) => {
+    const response = await fetchHandler(fromCloudFrontRequest(event.Records[0].cf.request));
+    return toCloudFrontResponse(response, event.Records[0].cf.response);
+};
+
+const fromCloudFrontRequest = (cloudFrontRequest) => {
+    // viewer request event:
+    // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-event-structure.html
+    const cfReq = cloudFrontRequest;
+    const headers = {};
+    Object.keys(cfReq.headers).map((lowerKey) => {
+        cfReq.headers[lowerKey].map(({ key, value }) => {
+            headers[key] = value;
+        });
+    });
+    const event = {
+        request: new Request(`https://${cfReq.headers.host[0].value}${cfReq.uri}?${cfReq.querystring}`, {
+            method: cfReq.method,
+            headers,
+            body: (cfReq.body && cfReq.body.data)? Buffer.from(cfReq.body.data, cfReq.body.encoding) : undefined,
+        }),
+    }
+    return event;
+};
+
+const toCloudFrontResponse = async (response) => {
+    // viewer request event:
+    // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-generating-http-responses.html
+    const res = response;
+    const cfRes = {};
+    // status
+    cfRes.status = res.status;
+    cfRes.statusDescription = res.statusText;
+    // headers
+    res.headers.forEach((value, key) => {
+        if (!cfRes.headers) { cfRes.headers = {}; }
+        const lowerKey = key.toLowerCase();
+        if (isBlackListedHeader(lowerKey)) { return }
+        cfRes.headers[lowerKey] = [{ key, value }];
+    });
+    // body
+    if (res.body) {
+        cfRes.body = Buffer.from(await res.arrayBuffer()).toString('base64');
+        cfRes.bodyEncoding = 'base64';
+    }
+    return cfRes;
+};
+
+const isBlackListedHeader = (lowerKey) => {
+    // viewer request event:
+    // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/edge-function-restrictions-all.html
+    return /^x-amz-cf-/.test(lowerKey) || /^x-amz-cf-/.test(lowerKey) || [
+        // disallowed headers
+        'connection',
+        'expect',
+        'keep-alive',
+        'proxy-authenticate',
+        'proxy-authorization',
+        'proxy-connection',
+        'trailer',
+        'upgrade',
+        'x-accel-buffering',
+        'x-accel-charset',
+        'x-accel-limit-rate',
+        'x-accel-redirect',
+        'x-amzn-auth',
+        'x-amzn-cf-billing',
+        'x-amzn-cf-id',
+        'x-amzn-cf-xff',
+        'x-amzn-errortype',
+        'x-amzn-fle-profile',
+        'x-amzn-header-count',
+        'x-amzn-header-order',
+        'x-amzn-lambda-integration-tag',
+        'x-amzn-requestid',
+        'x-cache',
+        'x-forwarded-proto',
+        'x-real-ip',
+        // read-only headers in viewer request events
+        'content-length',
+        'host',
+        'transfer-encoding',
+        'via',
+        // let aws decide how to compress
+        'content-encoding',
+    ].includes(lowerKey);
+};
