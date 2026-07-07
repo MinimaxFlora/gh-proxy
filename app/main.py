@@ -41,13 +41,16 @@ black_list = [tuple([x.replace(' ', '') for x in i.split('/')]) for i in black_l
 pass_list = [tuple([x.replace(' ', '') for x in i.split('/')]) for i in pass_list.split('\n') if i]
 app = Flask(__name__)
 CHUNK_SIZE = 1024 * 10
-index_html = requests.get(ASSET_URL, timeout=10).text
+INPUT_PATTERN = r'^((https|http):\/\/)?(github\.com\/user-attachments\/.+|github\.com\/.+?\/.+?\/(?:releases|archive|blob|raw|suites|tags)\/.+|((?:raw|gist)\.(?:githubusercontent|github)\.com)\/.+)$'
+index_html = re.sub(r'pattern="[^"]+"', lambda _: f'pattern="{INPUT_PATTERN}"', requests.get(ASSET_URL, timeout=10).text, count=1)
 icon_r = requests.get(ASSET_URL + '/favicon.ico', timeout=10).content
 exp1 = re.compile(r'^(?:https?://)?github\.com/(?P<author>.+?)/(?P<repo>.+?)/(?:releases|archive)/.*$')
 exp2 = re.compile(r'^(?:https?://)?github\.com/(?P<author>.+?)/(?P<repo>.+?)/(?:blob|raw)/.*$')
 exp3 = re.compile(r'^(?:https?://)?github\.com/(?P<author>.+?)/(?P<repo>.+?)/(?:info|git-).*$')
 exp4 = re.compile(r'^(?:https?://)?raw\.(?:githubusercontent|github)\.com/(?P<author>.+?)/(?P<repo>.+?)/.+?/.+$')
 exp5 = re.compile(r'^(?:https?://)?gist\.(?:githubusercontent|github)\.com/(?P<author>.+?)/.+?/.+$')
+exp6 = re.compile(r'^(?:https?://)?github\.com/(?P<author>.+?)/(?P<repo>.+?)/tags.*$')
+exp7 = re.compile(r'^(?:https?://)?github\.com/(?P<author>user-attachments)/(?P<repo>.+?)/.*$')
 
 requests.sessions.default_headers = lambda: CaseInsensitiveDict()
 
@@ -107,7 +110,7 @@ def iter_content(self, chunk_size=1, decode_unicode=False):
 
 
 def check_url(u):
-    for exp in (exp1, exp2, exp3, exp4, exp5):
+    for exp in (exp1, exp2, exp3, exp4, exp5, exp6, exp7):
         m = exp.match(u)
         if m:
             return m
