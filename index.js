@@ -4,6 +4,7 @@
  * static files (404.html, sw.js, conf.js)
  */
 const ASSET_URL = 'https://hunshcn.github.io/gh-proxy/'
+const INPUT_PATTERN = '^((https|http):\\/\\/)?(github\\.com\\/user-attachments\\/.+|github\\.com\\/.+?\\/.+?\\/(?:releases|archive|blob|raw|suites)\\/.+|((?:raw|gist)\\.(?:githubusercontent|github)\\.com)\\/.+)$'
 // 前缀，如果自定义路由为example.com/gh/*，将PREFIX改为 '/gh/'，注意，少一个杠都会错！
 const PREFIX = '/'
 // 分支文件使用jsDelivr镜像的开关，0为关闭，默认关闭
@@ -30,6 +31,7 @@ const exp3 = /^(?:https?:\/\/)?github\.com\/.+?\/.+?\/(?:info|git-).*$/i
 const exp4 = /^(?:https?:\/\/)?raw\.(?:githubusercontent|github)\.com\/.+?\/.+?\/.+?\/.+$/i
 const exp5 = /^(?:https?:\/\/)?gist\.(?:githubusercontent|github)\.com\/.+?\/.+?\/.+$/i
 const exp6 = /^(?:https?:\/\/)?github\.com\/.+?\/.+?\/tags.*$/i
+const exp7 = /^(?:https?:\/\/)?github\.com\/user-attachments\/.*$/i
 
 /**
  * @param {any} body
@@ -62,7 +64,7 @@ addEventListener('fetch', e => {
 
 
 function checkUrl(u) {
-    for (let i of [exp1, exp2, exp3, exp4, exp5, exp6]) {
+    for (let i of [exp1, exp2, exp3, exp4, exp5, exp6, exp7]) {
         if (u.search(i) === 0) {
             return true
         }
@@ -83,7 +85,7 @@ async function fetchHandler(e) {
     }
     // cfworker 会把路径中的 `//` 合并成 `/`
     path = urlObj.href.slice(urlObj.origin.length + PREFIX.length).replace(/^https?:\/+/, 'https://')
-    if (path.search(exp1) === 0 || path.search(exp5) === 0 || path.search(exp6) === 0 || path.search(exp3) === 0) {
+    if (path.search(exp1) === 0 || path.search(exp5) === 0 || path.search(exp6) === 0 || path.search(exp3) === 0 || path.search(exp7) === 0) {
         return httpHandler(req, path)
     } else if (path.search(exp2) === 0) {
         if (Config.jsdelivr) {
@@ -102,8 +104,30 @@ async function fetchHandler(e) {
             return httpHandler(req, path)
         }
     } else {
-        return fetch(ASSET_URL + path)
+        return assetHandler(path)
     }
+}
+
+
+/**
+ * @param {string} path
+ */
+async function assetHandler(path) {
+    const res = await fetch(ASSET_URL + path)
+    if (path !== '') {
+        return res
+    }
+
+    const headers = new Headers(res.headers)
+    headers.set('content-type', 'text/html; charset=utf-8')
+    headers.delete('content-length')
+    headers.delete('content-encoding')
+    headers.delete('etag')
+    const body = (await res.text()).replace(/pattern="[^"]+"/, () => `pattern="${INPUT_PATTERN}"`)
+    return new Response(body, {
+        status: res.status,
+        headers,
+    })
 }
 
 
