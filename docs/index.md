@@ -23,8 +23,6 @@ hero:
 import ProxyTool from "./.vitepress/theme/components/ProxyTool.vue";
 </script>
 
-<ProxyTool />
-
 <div class="home-section">
   <h2 class="home-section__title">核心特性</h2>
   <p class="home-section__desc">为加速而生的 GitHub 下载中间层，覆盖绝大多数日常使用场景。</p>
@@ -77,6 +75,8 @@ import ProxyTool from "./.vitepress/theme/components/ProxyTool.vue";
     </div>
   </div>
 </div>
+
+<ProxyTool />
 
 <div class="home-section">
   <h2 class="home-section__title">支持的链接类型</h2>

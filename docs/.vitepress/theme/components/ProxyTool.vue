@@ -199,8 +199,9 @@ function openProxy() {
 <style scoped>
 .proxy-tool {
   position: relative;
+  scroll-margin-top: calc(var(--vp-nav-height) + 28px);
   max-width: 880px;
-  margin: 12px auto 56px;
+  margin: 44px auto 56px;
   padding: 1px;
   border-radius: 22px;
   background: linear-gradient(

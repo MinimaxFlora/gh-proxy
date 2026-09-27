@@ -22,6 +22,15 @@
 }
 
 /* Hero 区域微调 */
+.VPNavBarTitle .logo {
+  transition: filter 0.25s;
+}
+
+/* GitHub 图标为深色，暗色模式下反相以保证可见 */
+.dark .VPNavBarTitle .logo {
+  filter: invert(1) brightness(1.35);
+}
+
 .VPHero .name {
   background-clip: text;
   -webkit-background-clip: text;
