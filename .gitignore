@@ -9,6 +9,9 @@ docs/.vitepress/cache
 __pycache__/
 *.py[cod]
 
+# agent workspace metadata (keep local only)
+.monkeycode/
+
 # editor / system
 .DS_Store
 *.log
