@@ -45,6 +45,10 @@ export default defineConfig({
   sitemap: {
     hostname: "https://minimaxflora.github.io/gh-proxy/",
   },
+  vite: {
+    // 允许在线预览域名访问开发服务器
+    server: { allowedHosts: [".monkeycode-ai.online"] },
+  },
   themeConfig: {
     logo: "/logo.svg",
     outline: { level: [2, 3], label: "本页导航" },
