@@ -1,5 +1,5 @@
 /**
- * 站点自定义样式：品牌色、首页 Hero、功能卡片等
+ * 站点自定义样式：品牌色、首页 Hero、下拉展示的在线加速工具
  */
 
 :root {
@@ -63,9 +63,73 @@
 }
 
 /* 锚点跳转时避开顶部导航栏 */
-#proxy-tool,
-.home-section {
+#proxy-tool {
   scroll-margin-top: calc(var(--vp-nav-height) + 28px);
+}
+
+/* 首页 Hero 占满首屏，其下内容需要下拉才出现 */
+.VPHomeHero {
+  display: flex;
+  align-items: center;
+  min-height: calc(100vh - var(--vp-nav-height));
+}
+
+.VPHomeHero > .container {
+  width: 100%;
+}
+
+/* 首屏底部下拉提示 */
+.home-below {
+  position: relative;
+  /* 阻止内部卡片的 margin-top 折叠上来，保证下移位置可预期 */
+  display: flow-root;
+}
+
+.home-scroll-cue {
+  position: absolute;
+  /* 锚定在首页内容区上边缘之外，即首屏 Hero 的底部 */
+  top: 0;
+  left: 50%;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  color: var(--vp-c-text-3);
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 10px));
+}
+
+.home-scroll-cue__text {
+  font-size: 12.5px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.home-scroll-cue__icon {
+  width: 22px;
+  height: 22px;
+  animation: tk-scroll-cue 1.8s ease-in-out infinite;
+}
+
+@keyframes tk-scroll-cue {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(5px);
+  }
+}
+
+/* 首屏较矮时 Hero 内容更高，隐藏提示避免与按钮重叠 */
+@media (max-height: 720px) {
+  .home-scroll-cue {
+    display: none;
+  }
 }
 
 /* 首页顶部装饰性光晕 */
@@ -78,7 +142,7 @@
   top: 0;
   right: 0;
   left: 0;
-  height: 560px;
+  height: 100vh;
   pointer-events: none;
   content: "";
   background:
@@ -91,138 +155,10 @@
   max-width: 1100px;
 }
 
-/* 功能卡片网格 */
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin: 8px 0 22px;
-}
-
-.feature-card {
-  position: relative;
-  padding: 22px;
-  overflow: hidden;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 16px;
-  background: var(--vp-c-bg-soft);
-  transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
-}
-
-.feature-card::after {
-  position: absolute;
-  inset: 0;
-  content: "";
-  background: radial-gradient(circle at 100% 0, var(--vp-c-brand-soft), transparent 55%);
-  opacity: 0;
-  transition: opacity 0.25s;
-}
-
-.feature-card:hover {
-  border-color: var(--vp-c-brand-2);
-  box-shadow: 0 20px 40px -28px rgba(79, 70, 229, 0.75);
-  transform: translateY(-3px);
-}
-
-.feature-card:hover::after {
-  opacity: 1;
-}
-
-.feature-card__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  margin-bottom: 14px;
-  color: #fff;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #4f46e5, #06b6d4);
-  box-shadow: 0 12px 26px -14px rgba(79, 70, 229, 0.9);
-}
-
-.feature-card__icon svg {
-  width: 22px;
-  height: 22px;
-}
-
-.feature-card h3 {
-  margin: 0 0 6px !important;
-  padding: 0 !important;
-  border: none !important;
-  font-size: 16.5px;
-}
-
-.feature-card p {
-  margin: 0 !important;
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--vp-c-text-2);
-}
-
-/* 首页小节标题 */
-.home-section {
-  margin-top: 44px;
-}
-
-.home-section__title {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 6px;
-  font-size: 22px;
-  font-weight: 700;
-}
-
-.home-section__title::before {
-  display: inline-block;
-  width: 6px;
-  height: 20px;
-  content: "";
-  border-radius: 4px;
-  background: linear-gradient(180deg, #4f46e5, #06b6d4);
-}
-
-.home-section__desc {
-  margin: 0 0 18px;
-  color: var(--vp-c-text-2);
-}
-
-/* 支持类型表格美化 */
-.vp-doc .link-type {
-  display: block;
-  width: 100%;
-  margin: 0 0 8px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 14px;
-  -webkit-overflow-scrolling: touch;
-}
-
-.vp-doc .link-type td:first-child {
-  width: 168px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* 表格内长链接不撑破容器 */
-.vp-doc .link-type code {
-  white-space: nowrap;
-}
-
-/* VP 首页 body 底部留白 */
-.VPHome .VPHomeContent {
-  padding-bottom: 24px;
-}
-
-@media (max-width: 768px) {
-  .feature-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .vp-doc .link-type td:first-child {
-    width: 104px;
-    font-size: 13px;
+/* 尊重用户的减少动效偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .VPHero .image-src,
+  .home-scroll-cue__icon {
+    animation: none;
   }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
 /**
  * 通过 GitHub Pages 直接打开本站时，需要显式配置加速服务地址。
@@ -41,6 +41,10 @@ const origin = ref("");
 const showSettings = ref(false);
 const copiedField = ref("");
 const isDocSite = ref(false);
+const rootRef = ref<HTMLElement>();
+
+// 首屏不展示工具，下拉到可视区域时再滑入
+const isPending = ref(false);
 
 const trimmed = computed(() => input.value.trim());
 const isValid = computed(() => !trimmed.value || VALID_PATTERN.test(trimmed.value));
@@ -54,6 +58,23 @@ onMounted(() => {
   isDocSite.value = /\.github\.io$/i.test(window.location.hostname);
   const saved = localStorage.getItem(STORAGE_KEY) || DEFAULT_PROXY_ORIGIN;
   origin.value = saved || (isDocSite.value ? "" : window.location.origin);
+
+  const el = rootRef.value;
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  if (!el || reduceMotion || typeof IntersectionObserver === "undefined") return;
+
+  isPending.value = true;
+  const observer = new IntersectionObserver(
+    entries => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        isPending.value = false;
+        observer.disconnect();
+      }
+    },
+    { threshold: 0.12, rootMargin: "0px 0px -6% 0px" },
+  );
+  observer.observe(el);
+  onBeforeUnmount(() => observer.disconnect());
 });
 
 function normalizeOrigin(value: string) {
@@ -108,7 +129,7 @@ function openProxy() {
 </script>
 
 <template>
-  <div id="proxy-tool" class="proxy-tool">
+  <div id="proxy-tool" ref="rootRef" class="proxy-tool" :class="{ 'is-pending': isPending }">
     <div class="proxy-tool__inner">
       <div class="proxy-tool__head">
         <span class="proxy-tool__badge">在线加速</span>
@@ -201,7 +222,8 @@ function openProxy() {
   position: relative;
   scroll-margin-top: calc(var(--vp-nav-height) + 28px);
   max-width: 880px;
-  margin: 44px auto 56px;
+  /* 首屏为 Hero 独占，这里保证整卡完整位于折叠线之下 */
+  margin: 72px auto 56px;
   padding: 1px;
   border-radius: 22px;
   background: linear-gradient(
@@ -211,6 +233,13 @@ function openProxy() {
     rgba(168, 85, 247, 0.65)
   );
   box-shadow: 0 30px 70px -34px rgba(79, 70, 229, 0.65);
+  transition: opacity 0.55s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* JS 就绪且尚未滚入可视区域时隐藏，滚入后滑入 */
+.proxy-tool.is-pending {
+  opacity: 0;
+  transform: translateY(34px);
 }
 
 .proxy-tool__inner {
@@ -506,6 +535,17 @@ function openProxy() {
 
   .proxy-tool__title {
     font-size: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .proxy-tool {
+    transition: none;
+  }
+
+  .proxy-tool.is-pending {
+    opacity: 1;
+    transform: none;
   }
 }
 </style>
