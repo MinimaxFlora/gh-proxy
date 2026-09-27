@@ -10,7 +10,7 @@ from requests.utils import (
     stream_decode_response_unicode, iter_slices, CaseInsensitiveDict)
 from urllib3.exceptions import (
     DecodeError, ReadTimeoutError, ProtocolError)
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 # config
 # 分支文件使用jsDelivr镜像的开关，0为关闭，默认关闭
@@ -34,7 +34,7 @@ pass_list = '''
 
 HOST = '127.0.0.1'  # 监听地址，建议监听本地然后由web服务器反代
 PORT = 80  # 监听端口
-ASSET_URL = 'https://hunshcn.github.io/gh-proxy'  # 主页
+ASSET_URL = 'https://minimaxflora.github.io/gh-proxy'  # 主页
 
 white_list = [tuple([x.replace(' ', '') for x in i.split('/')]) for i in white_list.split('\n') if i]
 black_list = [tuple([x.replace(' ', '') for x in i.split('/')]) for i in black_list.split('\n') if i]
@@ -42,7 +42,7 @@ pass_list = [tuple([x.replace(' ', '') for x in i.split('/')]) for i in pass_lis
 app = Flask(__name__)
 CHUNK_SIZE = 1024 * 10
 index_html = requests.get(ASSET_URL, timeout=10).text
-icon_r = requests.get(ASSET_URL + '/favicon.ico', timeout=10).content
+icon_r = requests.get(ASSET_URL + '/logo.svg', timeout=10).content
 exp1 = re.compile(r'^(?:https?://)?github\.com/(?P<author>.+?)/(?P<repo>.+?)/(?:releases|archive)/.*$')
 exp2 = re.compile(r'^(?:https?://)?github\.com/(?P<author>.+?)/(?P<repo>.+?)/(?:blob|raw)/.*$')
 exp3 = re.compile(r'^(?:https?://)?github\.com/(?P<author>.+?)/(?P<repo>.+?)/(?:info|git-).*$')
@@ -61,7 +61,7 @@ def index():
 
 @app.route('/favicon.ico')
 def icon():
-    return Response(icon_r, content_type='image/vnd.microsoft.icon')
+    return Response(icon_r, content_type='image/svg+xml')
 
 
 def iter_content(self, chunk_size=1, decode_unicode=False):
@@ -116,6 +116,7 @@ def check_url(u):
 
 @app.route('/<path:u>', methods=['GET', 'POST'])
 def handler(u):
+    raw_path = u
     u = u if u.startswith('http') else 'https://' + u
     if u.rfind('://', 3, 9) == -1:
         u = u.replace('s:/', 's://', 1)  # uwsgi会将//传递为/
@@ -137,7 +138,11 @@ def handler(u):
                 pass_by = True
                 break
     else:
-        return Response('Invalid input.', status=403)
+        # 静态资源：站点首页带 base 前缀（如 /gh-proxy/），归一化后从 ASSET_URL 代理加载，
+        # 保持同源，避免跨域导致模块脚本、字体等资源加载失败
+        asset_base = urlparse(ASSET_URL).path.strip('/')
+        asset_path = raw_path[len(asset_base) + 1:] if asset_base and raw_path.startswith(asset_base + '/') else raw_path
+        return proxy_asset(ASSET_URL + '/' + asset_path)
 
     if (jsdelivr or pass_by) and exp2.match(u):
         u = u.replace('/blob/', '@', 1).replace('github.com', 'cdn.jsdelivr.net/gh', 1)
@@ -157,6 +162,18 @@ def handler(u):
             return redirect(url)
         u = quote(u, safe='/:')
         return proxy(u)
+
+
+def proxy_asset(url):
+    """代理站点静态资源，保持同源并透传内容类型"""
+    try:
+        r = requests.get(url, stream=True, timeout=30)
+        headers = dict(r.headers)
+        for key in ('Content-Encoding', 'Transfer-Encoding', 'Connection', 'Content-Length'):
+            headers.pop(key, None)
+        return Response(iter_content(r, chunk_size=CHUNK_SIZE), headers=headers, status=r.status_code)
+    except Exception as e:
+        return Response('asset error ' + str(e), status=502)
 
 
 def proxy(u, allow_redirects=False):

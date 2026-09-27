@@ -1,0 +1,17 @@
+# dependencies
+node_modules
+
+# vitepress build output & cache
+docs/.vitepress/dist
+docs/.vitepress/cache
+
+# python
+__pycache__/
+*.py[cod]
+
+# editor / system
+.DS_Store
+*.log
+.idea
+.vscode/*
+!.vscode/extensions.json

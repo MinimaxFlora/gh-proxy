@@ -1,5 +1,28 @@
 # gh-proxy
 
+## 美化主页 / 在线工具
+
+本项目在原有功能之上，使用 [VitePress](https://vitepress.dev/) + [Teek](https://github.com/Kele-Bingtang/vitepress-theme-teek) 主题重做了一套美观的主页与文档站，部署在 GitHub Pages，作为服务的静态主页（`ASSET_URL`）。
+
+- 在线主页与工具：<https://minimaxflora.github.io/gh-proxy/>
+- 源文件目录：`docs/`（VitePress 站点，`master` 分支）
+- 自动部署：`.github/workflows/deploy.yml`（推送 `master` 后自动构建并发布到 `gh-pages` 分支）
+
+本地开发与构建：
+
+```bash
+# 安装依赖
+npm install
+
+# 本地预览
+npm run docs:dev
+
+# 构建静态文件（输出到 docs/.vitepress/dist）
+npm run docs:build
+```
+
+> 部署到 GitHub Pages 后，请把 `index.js` 与 `app/main.py` 中的 `ASSET_URL` 改成你的 Pages 地址（默认已指向 `https://minimaxflora.github.io/gh-proxy/`）。服务端已内置站点子路径前缀归一化，通过加速域名访问时页面资源同样可以正常加载。
+
 ## 简介
 
 github release、archive以及项目文件的加速项目，支持clone，有Cloudflare Workers无服务器版本以及Python版本

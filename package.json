@@ -1,0 +1,24 @@
+{
+  "name": "gh-proxy-site",
+  "private": true,
+  "version": "1.0.0",
+  "description": "gh-proxy 美化文档站（VitePress + Teek）",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev docs",
+    "start": "vitepress dev docs",
+    "docs:dev": "vitepress dev docs",
+    "build": "vitepress build docs",
+    "docs:build": "vitepress build docs",
+    "preview": "vitepress preview docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "devDependencies": {
+    "sass": "^1.89.2",
+    "vitepress": "^1.6.4"
+  },
+  "dependencies": {
+    "vitepress-theme-teek": "^1.6.2",
+    "vue": "^3.5.18"
+  }
+}

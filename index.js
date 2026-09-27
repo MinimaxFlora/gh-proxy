@@ -3,7 +3,7 @@
 /**
  * static files (404.html, sw.js, conf.js)
  */
-const ASSET_URL = 'https://hunshcn.github.io/gh-proxy/'
+const ASSET_URL = 'https://minimaxflora.github.io/gh-proxy/'
 // 前缀，如果自定义路由为example.com/gh/*，将PREFIX改为 '/gh/'，注意，少一个杠都会错！
 const PREFIX = '/'
 // 分支文件使用jsDelivr镜像的开关，0为关闭，默认关闭
@@ -102,7 +102,11 @@ async function fetchHandler(e) {
             return httpHandler(req, path)
         }
     } else {
-        return fetch(ASSET_URL + path)
+        // 静态资源：ASSET_URL 已包含站点子路径（如 /gh-proxy/），
+        // 浏览器请求的是带 base 前缀的路径，做一次归一化避免重复拼接
+        const assetBase = new URL(ASSET_URL).pathname.replace(/^\/+|\/+$/g, '')
+        const assetPath = assetBase && path.startsWith(assetBase + '/') ? path.slice(assetBase.length + 1) : path
+        return fetch(ASSET_URL + assetPath)
     }
 }
 
@@ -183,4 +187,3 @@ async function proxy(urlObj, reqInit) {
         headers: resHdrNew,
     })
 }
-
